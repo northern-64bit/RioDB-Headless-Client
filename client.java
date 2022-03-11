@@ -1,3 +1,11 @@
+/*
+
+MIT License
+
+Copyright (c) 2022 northern-64bit
+
+*/
+
 import java.io.*;
 import java.net.http.*;
 import java.net.http.HttpRequest.BodyPublishers;
