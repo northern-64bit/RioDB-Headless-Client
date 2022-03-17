@@ -8,9 +8,13 @@ A headless client for [RioDB](https://github.com/RioDB/riodb).
 
 ## Start the client
 1. Start your RioDB instance (for example via the .bat file)
-2. Run the Client.java file (open cmd and run: java Client.java)
-3. Enter the setup settings (currently only the host of the RioDB instance)
-4. Finished! Use the terminal. You can enter "system status;" to see if it works.
+2. Compile the client (javac -d . Client.java postHTTP.java postHTTPS.java)
+3. Run the compiled code (java client.Client)
+4. Enter the setup settings
+   1. Type of request: HTTP or HTTPS
+   2. If HTTPS is selected then enter your username and password for your RioDB instance.
+   3. Enter the selected host
+5. Finished! Use the client in order to communicate with the RioDB instance. You can enter "system status;" to see if it works.
 
 ## Commands
 * clear // clears the terminal
