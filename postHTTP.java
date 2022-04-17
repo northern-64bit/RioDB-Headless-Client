@@ -1,23 +1,39 @@
 /*
-
 MIT License
-
 Copyright (c) 2022 northern-64bit
-
 */
 
 package client;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Objects;
 
-public class postHTTP {
+public final class PostHTTP {
+	
+    public static boolean testURL(String strUrl) {
+    
+    	String r = sendPost(strUrl, "");
+        return r != null && r.contains("200");
 
-    public static void sendPost(String host, String statement)  {
+    }
+	
+	public static String sendPost(String host, String statement)  {
+		
+		String responseStr = "";
+		
+		HttpClient httpClient = HttpClient.newBuilder()
+		            .version(HttpClient.Version.HTTP_2)
+		            .build();
+
         HttpRequest.Builder httpRequestBuilder = HttpRequest.newBuilder();
-        httpRequestBuilder.uri(URI.create(host + "/?pretty=true"))
+		httpRequestBuilder.uri(URI.create(host
+				+ "/?pretty=true"))
                 .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
                 .header("Content-Type", "application/json");
         httpRequestBuilder.POST(HttpRequest.BodyPublishers.ofString("\""+ statement +"\""));
@@ -26,19 +42,19 @@ public class postHTTP {
         HttpResponse<String> response;
 
         try {
-            response = Client.httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             int statusCode = response.statusCode();
             if (statusCode != 200) {
-                System.out.printf("%nStatus code: "+ response.statusCode() + "%n");
+                responseStr = "Status code: "+ response.statusCode();
             }
 
-            System.out.printf("%n" + response.body().formatted().toString() + "%n");
-
+            responseStr = response.body().formatted().toString();
 
         } catch (IOException | InterruptedException e) {
-            System.out.printf("%n\u001B[31m Error \u001B[0m%n");
-            e.printStackTrace();
+            responseStr = "%n\u001B[31m Error \u001B[0m%n" + e.getMessage();
         }
+        
+        return responseStr;
 
     }
 }

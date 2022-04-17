@@ -1,18 +1,11 @@
 /*
-
 MIT License
-
 Copyright (c) 2022 northern-64bit
-
 */
 
 package client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Console;
+import java.io.*;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -27,140 +20,180 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-public class postHTTPS {
+public final class PostHTTPS {
 
-    public static String getCredentials(Scanner input) {
-        Console console = System.console();
-        System.out.printf("%nEnter username:%n%n > ");
-        String userStr = input.nextLine();
-        char[] passwordArray = console.readPassword("Enter your password: ");
-        String pwdStr = new String(passwordArray);
+	public static String getCredentials(Scanner input) {
 
-        return Base64.getEncoder().encodeToString((userStr + ":" + pwdStr).getBytes());
-    }
+		// console object
+		Console cnsl = System.console();
 
-    public static void testConnection(String urlStr) {
-        try {
-            // Create a trust manager that does not validate certificate chains
-            TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
+		// Read line
+		String userStr = cnsl.readLine("%nEnter username:%n%n> ");
 
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                }
+		// Read password
+		// into character array
+		char[] userPwd = cnsl.readPassword("%nEnter password:%n%n> ");
 
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                }
-            }};
+		return Base64.getEncoder().encodeToString((userStr + ":" + new String(userPwd)).getBytes());
+	}
 
-            // Install the all-trusting trust manager
-            SSLContext sc = SSLContext.getInstance("TLSv1.2");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-            SSLContext.setDefault(sc);
+	public static boolean testURL(String strUrl, String authorization) {
 
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+		String r = sendPost(strUrl, "", authorization);
+		if (r != null && (r.contains("200") || r.contains("401"))) {
+			return true;
+		}
+		System.out.println(r);
+		return false;
 
-            // Create all-trusting host name verifier
-            HostnameVerifier allHostsValid = new HostnameVerifier() {
+	}
 
-                public boolean verify(String hostname, SSLSession session) {
-                    return true;
-                }
-            };
+	/**
+	 * A simple implementation to pretty-print JSON file.
+	 *
+	 * @param unformattedJsonString
+	 * @return
+	 */
+	public static String prettyPrintJSON(String unformattedJsonString) {
+		StringBuilder prettyJSONBuilder = new StringBuilder();
+		int indentLevel = 0;
+		boolean inQuote = false;
+		for(char charFromUnformattedJson : unformattedJsonString.toCharArray()) {
+			switch(charFromUnformattedJson) {
+				case '"':
+					// switch the quoting status
+					inQuote = !inQuote;
+					prettyJSONBuilder.append(charFromUnformattedJson);
+					break;
+				case ' ':
+					// For space: ignore the space if it is not being quoted.
+					if(inQuote) {
+						prettyJSONBuilder.append(charFromUnformattedJson);
+					}
+					break;
+				case '{':
+				case '[':
+					// Starting a new block: increase the indent level
+					prettyJSONBuilder.append(charFromUnformattedJson);
+					indentLevel++;
+					appendIndentedNewLine(indentLevel, prettyJSONBuilder);
+					break;
+				case '}':
+				case ']':
+					// Ending a new block; decrese the indent level
+					indentLevel--;
+					appendIndentedNewLine(indentLevel, prettyJSONBuilder);
+					prettyJSONBuilder.append(charFromUnformattedJson);
+					break;
+				case ',':
+					// Ending a json item; create a new line after
+					prettyJSONBuilder.append(charFromUnformattedJson);
+					if(!inQuote) {
+						appendIndentedNewLine(indentLevel, prettyJSONBuilder);
+					}
+					break;
+				default:
+					prettyJSONBuilder.append(charFromUnformattedJson);
+			}
+		}
+		return prettyJSONBuilder.toString();
+	}
 
-            // Install the all-trusting host verifier
-            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+	/**
+	 * Print a new line with indention at the beginning of the new line.
+	 * @param indentLevel
+	 * @param stringBuilder
+	 */
+	private static void appendIndentedNewLine(int indentLevel, StringBuilder stringBuilder) {
+		stringBuilder.append("\n");
+		for (int i = 0; i < indentLevel; i++) {
+			// Assuming indention using 2 spaces
+			stringBuilder.append("  ");
+		}
+	}
 
-            URL urlObj = new URL(urlStr);
+	public static String sendPost(String urlStr, String payload, String authorization) {
 
-            HttpsURLConnection con = (HttpsURLConnection) urlObj.openConnection();
-            URL object = new URL(urlStr);
+		String responseStr = "";
+		try {
 
-        } catch (IOException | KeyManagementException | NoSuchAlgorithmException e) {}
-    }
+			// Create a trust manager that does not validate certificate chains
+			TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+					return null;
+				}
 
-    public static void sendPost(String urlStr, String payload, String authorization) {
+				public void checkClientTrusted(X509Certificate[] certs, String authType) {
+				}
 
-        try {
+				public void checkServerTrusted(X509Certificate[] certs, String authType) {
+				}
+			} };
 
-            // Create a trust manager that does not validate certificate chains
-            TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
+			// Install the all-trusting trust manager
+			SSLContext sc = SSLContext.getInstance("TLSv1.2");
+			sc.init(null, trustAllCerts, new java.security.SecureRandom());
+			SSLContext.setDefault(sc);
 
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                }
+			HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
 
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                }
-            } };
+			// Create all-trusting host name verifier
+			HostnameVerifier allHostsValid = new HostnameVerifier() {
 
-            // Install the all-trusting trust manager
-            SSLContext sc = SSLContext.getInstance("TLSv1.2");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-            SSLContext.setDefault(sc);
+				public boolean verify(String hostname, SSLSession session) {
+					return true;
+				}
+			};
 
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+			// Install the all-trusting host verifier
+			HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
 
-            // Create all-trusting host name verifier
-            HostnameVerifier allHostsValid = new HostnameVerifier() {
+			URL urlObj = new URL(urlStr);
 
-                public boolean verify(String hostname, SSLSession session) {
-                    return true;
-                }
-            };
+			HttpsURLConnection con = (HttpsURLConnection) urlObj.openConnection();
+			URL object = new URL(urlStr);
 
-            // Install the all-trusting host verifier
-            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+			// connection timeout 5 seconds
+			con.setConnectTimeout(5000);
+			con.setReadTimeout(5000);
+			con = (HttpsURLConnection) object.openConnection();
+			con.setDoOutput(true);
+			con.setDoInput(true);
+			con.setRequestProperty("Content-Type", "application/json");
+			con.setRequestProperty("Accept", "application/json");
+			con.setRequestProperty("pretty", "true");
+			con.setRequestMethod("POST");
 
-            URL urlObj = new URL(urlStr + "/?pretty=true");
+			// Setting authorization
+			con.setRequestProperty("Authorization", "Basic " + authorization);
 
-            HttpsURLConnection con = (HttpsURLConnection) urlObj.openConnection();
-            URL object = new URL(urlStr);
+			OutputStreamWriter wr = new OutputStreamWriter(con.getOutputStream());
+			if (payload != null) {
+				wr.write("\"" + payload + "\"");
+				wr.flush();
+			}
 
-            // connection timeout 5 seconds
-            con.setConnectTimeout(5000);
-            con.setReadTimeout(5000);
-            con = (HttpsURLConnection) object.openConnection();
-            con.setDoOutput(true);
-            con.setDoInput(true);
-            con.setRequestProperty("Content-Type", "application/json");
-            con.setRequestProperty("Accept", "application/json");
-            con.setRequestMethod("POST");
+			StringBuilder sb = new StringBuilder();
+			int responseCode = con.getResponseCode();
+			if (responseCode == HttpsURLConnection.HTTP_OK) {
+				BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "utf-8"));
+				String line = null;
+				while ((line = br.readLine()) != null) {
+					sb.append(line);
+				}
+				br.close();
+				responseStr = prettyPrintJSON(sb.toString());
 
-            // Setting authorization
-            con.setRequestProperty("Authorization", authorization);
+			} else {
+				responseStr = "Status code: " + responseCode;
+			}
 
-            OutputStreamWriter wr = new OutputStreamWriter(con.getOutputStream());
-            if (payload != null) {
-                wr.write(payload);
-                wr.flush();
-            }
+		} catch (IOException | NoSuchAlgorithmException | KeyManagementException e) {
+			responseStr = "error: " + e.getMessage();
+		}
 
-            StringBuilder sb = new StringBuilder();
-            int responseCode = con.getResponseCode();
-            if (responseCode == HttpsURLConnection.HTTP_OK) {
-                BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "utf-8"));
-                String line = null;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                }
-                br.close();
-                String response = sb.toString();
+		return responseStr;
 
-                System.out.printf("%n" + response + "%n");
-
-            } else {
-                System.out.printf("%nStatus code: " + responseCode + "%n");
-            }
-
-        } catch (IOException | NoSuchAlgorithmException | KeyManagementException e) {
-            System.out.println(e.getMessage());
-        }
-
-
-    }
+	}
 
 }
