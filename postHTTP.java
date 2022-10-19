@@ -6,13 +6,10 @@ Copyright (c) 2022 northern-64bit
 package client;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Objects;
 
 public final class PostHTTP {
 	
@@ -35,8 +32,8 @@ public final class PostHTTP {
 		httpRequestBuilder.uri(URI.create(host
 				+ "/?pretty=true"))
                 .setHeader("User-Agent", "Java 11 HttpClient Bot") // add request header
-                .header("Content-Type", "application/json");
-        httpRequestBuilder.POST(HttpRequest.BodyPublishers.ofString("\""+ statement +"\""));
+                .header("Content-Type", "text/plain");
+        httpRequestBuilder.POST(HttpRequest.BodyPublishers.ofString(statement));
 
         HttpRequest request = httpRequestBuilder.build();
         HttpResponse<String> response;
@@ -45,10 +42,12 @@ public final class PostHTTP {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             int statusCode = response.statusCode();
             if (statusCode != 200) {
-                responseStr = "Status code: "+ response.statusCode();
-            }
+               responseStr = "Status code: "+ response.statusCode();
+            } else {
 
-            responseStr = response.body().formatted().toString();
+            	responseStr = response.body().formatted().toString();
+           
+           }
 
         } catch (IOException | InterruptedException e) {
             responseStr = "%n\u001B[31m Error \u001B[0m%n" + e.getMessage();

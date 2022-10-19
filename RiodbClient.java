@@ -7,18 +7,18 @@ package client;
 
 import java.io.*;
 import java.util.*;
-import java.net.*;
-import java.net.http.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class RiodbClient {
 
-	static final String DEFAULT_HOST = "http://localhost:2333";
+	static final String DEFAULT_HOST = "https://localhost:2333";
 	static final Boolean IF_WINDOWS = System.getProperty("os.name").contains("Windows");
 
 	public static void main(String[] args) {
 
 		// flag if user provided HTTP or HTTPS server address. HTTP by default.
-		String requestType = "HTTP";
+		String requestType = "";
 
 		// RioDB server url
 		String strUrl = "";
@@ -41,23 +41,37 @@ public class RiodbClient {
 			// Get RioDB server address, and determine if HTTPS
 			System.out.printf("%nEnter a valid host [" + DEFAULT_HOST + "]: %n%n> ");
 			strUrl = input.nextLine();
-			if (Objects.equals(strUrl, "")) {
+
+			// If user didn't provide a host, we go with default. 
+			if (strUrl == null || Objects.equals(strUrl, "")) {
 				strUrl = DEFAULT_HOST;
-			} else if (strUrl != null && (strUrl.contains("https://") || strUrl.contains("HTTPS://"))) {
-				requestType = "HTTPS";
-				authorization = PostHTTPS.getCredentials(input);
-			} else if (strUrl != null && !strUrl.startsWith("https://") && !strUrl.startsWith("http://")) {
-				strUrl = "http://" + strUrl;
+			} 
+			// if user didn't specify http:// or https://, we go with https://
+			else if (!strUrl.startsWith("http")) {
+				strUrl = "https://" + strUrl;
 			}
 
-			// test the connection to the provided server
-			if (requestType.equals("HTTP") && PostHTTP.testURL(strUrl)) {
-				connectionSuccess = true;
-			} else if (requestType.equals("HTTPS") && PostHTTPS.testURL(strUrl, authorization)) {
-				connectionSuccess = true;
+			if (!isValidUrl(strUrl)) {
+				System.err.printf("%n\u001B[31m Invalid URL: " + strUrl + " \u001B[0m");
+			} else if (strUrl.contains("https://") || strUrl.contains("HTTPS://")) {
+				requestType = "HTTPS";
+				authorization = PostHTTPS.getCredentials(input);
+				if (PostHTTPS.testURL(strUrl, authorization)) {
+					connectionSuccess = true;
+				}
+			} else if (strUrl.startsWith("http://") || strUrl.startsWith("http://")) {
+				requestType = "HTTP";
+				if (PostHTTP.testURL(strUrl)) {
+					connectionSuccess = true;
+				}
 			} else {
+				System.err.printf("%n\u001B[31m Invalid URL: " + strUrl + " \u001B[0m");
+			}
+
+			if (!connectionSuccess) {
 				System.err.printf("%n\u001B[31m Unable to connect to " + strUrl + " \u001B[0m");
 			}
+
 		}
 		System.out.printf("%n\u001B[32m Connected to " + strUrl + " \u001B[0m%n");
 
@@ -100,5 +114,16 @@ public class RiodbClient {
 
 		input.close();
 		System.out.printf("%nExiting the program. Good bye and have a splendid day!");
+	}
+
+	private static boolean isValidUrl(String s) {
+		String pattern = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+		try {
+			Pattern patt = Pattern.compile(pattern);
+			Matcher matcher = patt.matcher(s);
+			return matcher.matches();
+		} catch (RuntimeException e) {
+			return false;
+		}
 	}
 }
