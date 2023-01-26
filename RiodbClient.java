@@ -83,7 +83,7 @@ public class RiodbClient {
 			if (s != null && s.equals("exit;")) {
 				break;
 			} else if (s != null && s.endsWith(";")) {
-				statement = statement + s; // add last line and wrap whole thing with double quotes.
+				statement = statement + "\n" + s; // add last line and wrap whole thing with double quotes.
 				if (Objects.equals(requestType, "HTTP")) {
 					System.out.printf(PostHTTP.sendPost(strUrl, statement) + "%n%n> "); // make HTTP POST request
 				} else if (Objects.equals(requestType, "HTTPS")) {
@@ -113,7 +113,7 @@ public class RiodbClient {
 		}
 
 		input.close();
-		System.out.printf("%nExiting the program. Good bye and have a splendid day!");
+		System.out.printf("%nExiting the program. Good bye and have a splendid day!\n");
 	}
 
 	private static boolean isValidUrl(String s) {
